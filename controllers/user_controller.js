@@ -1,11 +1,27 @@
 const { user } = require("../config/mongoose");
 const User = require('../models/user');
 module.exports.profile = (req, res)=>{
-    res.render('user_profile', {
-        title: 'Infohere',
-    });
+    if(req.cookies.user_id){
+
+        User.findById(req.cookies.user_id, (err, user)=>{
+            if(user){
+                return res.render('user_profile',{
+                    title : "User Profile",
+                    user : user
+                })
+            }
+
+            return res.redirect('/user/sign-in');
+        });
+    }else{
+        return res.redirect('/user/sign-in');
+    }
 }
 
+module.exports.signOut = (req, res)=>{
+    res.cookie('user_id', '');
+    return res.redirect('back');
+}
 
 module.exports.signUp = (req, res)=>{
     res.render('user_sign_up',{
@@ -19,7 +35,7 @@ module.exports.signIn = (req, res)=>{
     });
 }
 
-module.exports .create = (req, res)=>{
+module.exports.create = (req, res)=>{
     if(req.body.password != req.body.confirm_password)
     {
         return res.redirect('back');
@@ -48,5 +64,21 @@ module.exports .create = (req, res)=>{
 }
 
 module.exports.createSession = (req, res)=>{
-
+    User.findOne({email : req.body.email}, (err, user)=>{
+            if(err)
+            {
+                console.log('error in finding the user while sign in');
+            }       
+            if(user)
+            {
+                if(user.password != req.body.password)
+                {
+                    return res.redirect('back');
+                }
+                res.cookie('user_id', user.id);
+                return res.redirect('/user/profile');
+            }else{
+                    return res.redirect('back');
+            }
+    })
 }
